@@ -1,0 +1,2257 @@
+
+% !TEX program = lualatex
+
+%%% 
+%%% Usare il compositore «LuaLaTeX»
+%%% 
+
+\documentclass[11pt]{beamer}
+% \setlength{\parindent}{15pt} % Impone il rientro al valore di base 15pt, poiché la classe Beamer la pone nulla se non altrimenti specificato
+\setlength\parskip{7.5pt} % Impone la distanza tra due capoversi uguale a «7.5pt» ove il valore di base nella classe Beamer è «0pt»
+\usefonttheme[onlymath]{serif}
+
+\beamertemplatenavigationsymbolsempty % Elimina la barra di navigazione in fondo alle diapo
+
+\usepackage[italian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% \usepackage[T1]{tipa}
+
+% Colla classe «beamer» conviene usare il compositore «LuaLaTeX» cosí da poter cambiare facilmente il fonte, poiché quello di base è davvero brutto
+    % Pacchetto per cambiare il fonte (disponibile solo con LuaLaTeX)
+\usepackage{fontspec}
+\setsansfont{Times New Roman}
+
+\usepackage{amsmath} %Pacchetto per vari comandi matematici
+\usepackage{amsfonts} %Pacchetto per vari comandi matematici
+\usepackage{amsthm} %Pacchetto per vari comandi matematici
+
+    % Operatori definiti
+\newcommand{\derT}[3][d]{\frac{\mathrm{#1}#2}{\mathrm{#1}#3}}
+\newcommand{\derTiL}[3][d]{\mathrm{#1}#2/\mathrm{#1}#3}
+\newcommand{\derP}[2]{\frac{\partial#1}{\partial#2}}
+\newcommand{\derPiL}[2]{\partial#1/\partial#2}
+\newcommand{\de}{\mathrm{d}}
+
+\newcommand{\Ngdl}{N_{\text{gdl}}}
+\newcommand{\notaSci}[2]{
+    \scalebox{0.875}{$
+    \setlength{\thinmuskip}{-1mu}
+    \setlength{\medmuskip}{-1mu}
+    \setlength{\thickmuskip}{-1mu}
+    #1$}\scalebox{0.75}{$\times10^{#2}$}
+}
+
+\newcommand{\SpaziaturaMate}[3]{
+    \setlength{\thinmuskip}{#1mu}
+    \setlength{\medmuskip}{#2mu}
+    \setlength{\thickmuskip}{#3mu}
+}
+
+\usepackage[shortlabels]{enumitem} %Pacchetto per gestire le liste
+\usepackage{caption} % Pacchetto modificare piú facilmente le didascalie
+\usepackage{subcaption} % Pacchetto per avere due figure affiancate
+\usepackage{xcolor} % Pacchetto per colorare il testo
+\usepackage{xcolor} % Pacchetto per colorare il testo
+
+\usepackage{ragged2e} % Pacchetto per giustificare il testo
+\justifying
+
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{shadings}
+\usetikzlibrary{backgrounds}
+
+\usepackage{eso-pic}  % Pacchetto per aggiungere decorazioni nello sfondo
+\usepackage{hyperref} % Pacchetto per i nessi ipertestuali e i segnalibri
+\newcommand{\teqref}[2]{\hyperref[#1]{#2}}
+
+% Settaggio delle didascalie
+\captionsetup{aboveskip=5pt plus 0pt minus 0pt,           % Spazio sopra la didascalia
+              belowskip=-2.5pt plus 2.5pt minus 2.5pt}    % Spazio sotto la didascalia
+
+\title{
+    \texorpdfstring{
+    \parbox{1.5\textwidth}{
+    \LARGE\emph{\textbf{Implementazione e verifica della teoria\texorpdfstring{\\}{} sugli errori del metodo degli elementi finiti}}
+    }
+    }{}
+    \texorpdfstring{\\\vspace{10pt}}{}
+    \texorpdfstring{\parbox{.5\textwidth}{\centering\large Corso di Metodi numerici per le equazioni alle derivate parziali}}{}
+}
+\author{Taralli Valerio (s332689)\texorpdfstring{\\}{} Palmieri Alessio (s319676)\texorpdfstring{\\}{}}
+\date{}%04/09/2024}
+
+\renewcommand{\implies}{\DOTSB\Longrightarrow} % Nella definizione standarda «\implies» ha forma «\DOTSB \;\Longrightarrow \;», ove «\DOTSB» corrisponde a «\relax» vale a dire che non fa niente; tuttavia beamer [mannaggia non so perché] frigna che i due «\;» sono invalidi (in generale in modalità matematica par essere cosí dato che non li accetta), quindi è necessario ridefinire «\implies» senza i due simboli cosí da non avere errori imprevisti
+
+    % Decorazioni negli angoli delle pagine
+%\input{./Triangoli_Senza_Sfumatura.tex}
+\input{./Triangoli_Con_Sfumatura.tex}
+
+\definecolor{violaSez}{rgb}{0.2,0.2,0.7}
+
+\begin{document}
+
+        % Comando dinamico per cambiare il titolo delle diapo
+    \newcommand{\titoloSez}{Temporaneo}
+
+    % \maketitle
+    % \begin{frame}\titlepage\end{frame}
+    
+    \begin{frame}
+        \begin{center}
+            \textcolor{violaSez}{
+                \LARGE
+                \parbox{\textwidth}{\centering%
+                    \emph{\textbf{Implementazione e verifica della teoria sugli errori del metodo degli elementi finiti}}
+                }
+            }
+            %
+            \\\vspace{0.4cm}
+            %
+            \textcolor{violaSez}{
+                \parbox{.5\textwidth}{\centering%
+                    \large Corso di Metodi numerici per le equazioni alle derivate parziali
+                }
+            }
+            %
+            \\\vspace{1cm}
+            %
+            Taralli Valerio (s332689)\\
+            Palmieri Alessio (s319676)
+        \end{center}
+    \end{frame}
+    
+    %%%
+    %%% Premessa
+    %%%
+
+    \section*{Premessa}
+        
+    \begin{frame}\frametitle{\insertsection{}}
+         In questa presentazione s'illustreranno i risultati dell'implementazione e della verifica della teoria del Metodo degli elementi finiti per la risoluzione approssimata di equazioni alle derivate parziali.
+         
+         Essa si divide in due parti:
+
+        % \newcommand{\margineS}{2cm}
+        % \newcommand{\margineD}{4.5cm}
+        \newcommand{\margineS}{1cm}
+        \newcommand{\margineD}{0cm}
+        \begin{itemize}[label=$\diamond$,
+                        % topsep=!, % Spazio superiore tra testo e lista
+                        itemsep=5pt, % Spazio tra gli elementi («item») della lista
+                        leftmargin=\margineS,% Spazio tra la lista e il bordo destro del testo
+                        rightmargin=\margineD] % Spazio tra la lista e il bordo sinistro del testo
+                        % \leftmargin + \itemindent = \labelindent + \labelwidth + \labelsep
+                        %itemindent=!,
+                        % labelindent=!, % Spazio tra il margine sinistro e l'etichetta della lista
+                        %labelwidth=!,
+                        %labelsep=!]
+                        % Per il significato di queste impostazioni si veda p. 3 della documentazione «enumitem» 
+            \item Una prima parte teorica per mostrare i risultati attesi.
+            \item Una seconda parte pratica per analizzare i vari casi di studio.
+        \end{itemize}
+
+        Infine per l'implementazione è stato usato il triangolatore \textit{BBTR} unitamente a MATLAB versione «24.2.0.2773142 (R2024b) Update 2». 
+    \end{frame}
+    
+    %%%
+    %%% Definizione della Geometria
+    %%%
+
+    \part{Concetti teorici}
+    \begin{frame}\partpage\end{frame}
+    
+        \section{Elementi finiti e dominio}
+        
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+    
+                Si è preso in esame un dominio quadrato $\Omega=[0,1]\times[0,1] \subset\mathbb R^2$, per poi introdurre una triangolazione $\mathcal T_h$ conforme e vincolata. 
+            
+                Gli EF considerati sono due di forma triangolare:
+            
+                \begin{itemize}[label=$\diamond$,   % Cambia l'etichetta degli elementi («item»)
+                                % topsep=!,            % Spazio superiore tra testo e lista
+                                itemsep=0pt,        % Spazio tra gli elementi («item») della lista
+                                leftmargin=10pt]    % Spazio tra la lista e il bordo destro del testo
+                                % rightmargin=!,    % Spazio tra la lista e il bordo sinistro del testo
+                                % \leftmargin + \itemindent = \labelindent + \labelwidth + \labelsep
+                                %itemindent=!,
+                                % labelindent=!,     % Spazio tra il margine sinistro e l'etichetta della lista
+                                %labelwidth=!,
+                                %labelsep=!]
+                                % Per il significato di queste impostazioni si veda p. 3 della documentazione «enumitem» 
+                
+                    \item $\textbf{Elemento di Courant}$: $(T,\mathbb P_1(T),\mathcal L_T)$, ove $\mathbb P_1(T)$ è lo spazio delle funzioni lineari di dimensione $3$, mentre $\mathcal L_T$ è formato da tre vincoli ai vertici:\vspace{-2.5pt}
+                    %
+                    \begin{equation*}
+                        \setlength{\abovedisplayskip}{5pt plus 4pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                        \setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+                        \mathcal L_T=\{\ell_i(v)=v(\mathbf a_i),\quad i=1,2,3\}.
+                    \end{equation*}
+                    %
+                    \item $\textbf{Elemento quadratico}$: $(T,\mathbb P_2(T),\mathcal L_T)$, ove $\mathbb{P}_2(T)$ è lo spazio delle funzioni quadratiche di dimensione $6$, mentre $\mathcal L_T$ è formato da sei vincoli ai vertici e ai punti medi:
+                    %
+                    \begin{equation*}
+                        \setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                        \setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+                        \mathcal L_T=
+                        \left\{
+                        \begin{aligned}
+                            \ell_i(v)&=v(\mathbf a_i),&i=1,2,3.\\
+                            \ell_j(v)&=v(\mathbf a_{j-3,\text{mod}_3(j-3)+1}), &j=4,5,6,
+                        \end{aligned}
+                        \right.
+                    \end{equation*}
+                    %
+                    con $\text{mod}_d(n)$ indicante il modulo di $n$ con divisore $d$.
+                \end{itemize}
+            
+            \end{frame}
+            
+        \section{Problema stazionario}
+        
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+
+        
+                Il problema stazionario considerato è di natura ellittica del secondo ordine, e consiste nel trovare $u\colon\Omega\rightarrow\mathbb R$ tale che
+                %
+                \begin{equation}
+                    \text{[PS]}
+                    \left\{
+                    \begin{aligned}
+                        -\nabla\cdot(\nu\nabla u)+\boldsymbol\beta\cdot\nabla u + \sigma u
+                                   &=f                &\text{in }&\Omega  ,\\
+                        u          &=g_D              &\text{su }&\Gamma_D,\\
+                        \nu \derP un&=g_N              &\text{su }&\Gamma_N,
+                    \end{aligned}
+                    \right.
+                    \label{eqProblemaStazionario}
+                \end{equation}
+                %
+                dove
+                %
+                \begin{equation*}
+                    \nu\ge0,\quad
+                    \boldsymbol\beta\in\mathbb R^2,\quad
+                    \sigma\ge0
+                \end{equation*}
+                %
+                sono costanti, mentre vale
+                %
+                \begin{equation*}
+                       f\colon\Omega\to\mathbb R,\quad
+                       g_D\colon\Gamma_D\to\mathbb R,\quad
+                       g_N\colon\Gamma_N\to\mathbb R
+                \end{equation*}
+                %
+                con $\Gamma_D\cup\Gamma_N=\partial\Omega$ e $\Gamma_D\cap\Gamma_N=\emptyset$.                
+            \end{frame}
+            
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                {\SpaziaturaMate{1}{2}{3}
+                La $u\!\in\!H^1(\Omega)$ si può poi scomporre come somma di una parte omogenea $u_0\!\in\!H^1_{0,\Gamma_D}(\Omega)$ e non omogenea $\mathcal R_{g_D}\!\in\!H^1(\Omega)$, ossia
+                %
+                \begin{equation*}
+                    u=u_0+\mathcal R_{g_D},
+                \end{equation*}
+                %
+                e definendo l'operatore}
+                %
+                \begin{equation*}
+                    \begin{aligned}
+                        A:\ &H^1(\Omega)\rightarrow(H^1(\Omega))'\\
+                        &u\mapsto A(u)\equiv-\nu\Delta u+
+                        \boldsymbol\beta\cdot\nabla u+\sigma u,
+                    \end{aligned}
+                    \label{eqOperatorePS}
+                \end{equation*}
+                %
+                si può riscrivere il \teqref{eqProblemaStazionario}{[PS]} nella forma: 
+                %
+                 \begin{equation}
+                    \text{[PS]}_\text{r}
+                    \left\{
+                    \begin{aligned}
+                        A(u_0)&=f-A(\mathcal Rg_D)&\text{in }&\Omega,\\
+                                  u_0&=0 &\text{su }&\Gamma_D,\\
+                        \nu\derP un&=g_N &\text{su }&\Gamma_N. 
+                    \end{aligned}
+                    \right.
+                    \label{eqPSRiformulato}
+                \end{equation}
+
+            \end{frame}
+    
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                Definendo opportuni operatori $a$, $F$ e $G$ come
+                %
+                \begin{equation*}
+                    \setlength{\thinmuskip}{1mu}
+                    \setlength{\medmuskip}{2mu}
+                    \setlength{\thickmuskip}{3mu}
+                    \begin{aligned}
+                        a:\ &H^1(\Omega)\!\times\!H^1(\Omega)\rightarrow\mathbb R,\\
+                        &\qquad\quad\;\;(u,v)\mapsto a(u,v)\equiv
+                        \int_{\Omega}\nu\nabla u\cdot\nabla v
+                        +\boldsymbol\beta\cdot\nabla uv
+                        +\sigma uv \,\de x,\\
+                        F:\ &H^1(\Omega)\rightarrow\mathbb R,\qquad
+                        v\mapsto F(v)\equiv
+                        \int_{\Omega}\!\!fv\, \de x,\\
+                        G:\ &H^1(\Omega)\rightarrow\mathbb R,\qquad
+                        v\mapsto G(v)\equiv
+                        \int_{\Gamma_N}\!\!\!\!g_Nv\,\de s,
+                    \end{aligned}
+                \end{equation*}
+                %
+                la formulazione variazionale del problema \teqref{eqPSRiformulato}{[PS]$_\text{r}$} diviene
+                %
+                \begin{equation}
+                    \setlength{\thinmuskip}{1mu}
+                    \setlength{\medmuskip}{2mu}
+                    \setlength{\thickmuskip}{3mu}
+                    \text{[PV]}
+                    \left\{
+                    \begin{aligned}
+                        &\text{Trovare } u_0 \in H^1_{0,\Gamma_D}(\Omega) \text{ tale che:}
+                        \\[5pt]&a(u_0,v_0)=F(v_0)+G(v_0)-a(Rg_D,v_0),
+                        \\[5pt]&\forall v_0\in H^1_{0,\Gamma_D}(\Omega).
+                    \end{aligned}
+                    \right.
+                    \label{eqPSVariazionale}
+                \end{equation}
+                % 
+            \end{frame}
+
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                {\SpaziaturaMate{1}{2}{3}
+                Introducendo $V_h\subset V\equiv H^1_{0,\Gamma_D}(\Omega)$, indotto dalla $\mathcal T_h$ e di dimensione finita $\Ngdl$, si può scrivere \teqref{eqPSVariazionale}{[PV]} in forma discreta come
+                %
+                \begin{equation}
+                    \text{[PV]}_\text{h}
+                    \left\{
+                    \begin{aligned}
+                        &\text{Trovare } u_h \in V_h \text{ tale che:}
+                        \\[5pt]&a(u_h,v_h)=F(v_h)+G(v_h)-a(Rg_D,v_h),
+                        \\[5pt]&\forall v_h\in V_h.
+                    \end{aligned}
+                    \right.
+                    \label{eqPSVariazionaleDiscreto}
+                \end{equation}
+                %
+                Infine si sceglie la base canonica $\{\varphi_i\colon i=1,2,\ldots,\Ngdl\}$ tale che, dato un certo grado di libertà \textit{globale} $l_i$, si ha $l_i(\varphi_j)=\delta_{ij}$ per $1\le i,j\le \Ngdl$ cosí da avere
+                }
+                %
+                \begin{equation*}
+                    V_h=\text{span}\{\varphi_i\colon i=1,2,\ldots,\Ngdl\}
+                \end{equation*}
+            \end{frame}
+
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                {\SpaziaturaMate{1}{2}{3}
+                Una tale scelta permette di ricondurre, posti $v_h=\varphi_j$ per $1\le j\le \Ngdl$ e $u_h=\sum_{k=1}^{\Ngdl}u_k\varphi_k$, il \teqref{eqPSVariazionaleDiscreto}{[PV]$_\text{h}$} nel sistema algebrico
+                }
+                %
+                \begin{equation*}
+                    \mathbf A\mathbf u=\mathbf f+\mathbf g-\mathbf A_D\mathbf u_D\equiv\mathbf b.
+                    \label{eqSistemaAlgebrico}
+                \end{equation*}
+                %
+                ove
+                %
+                \begin{equation*}
+                    \begin{aligned}
+                        \mathbf A&\in\mathbb R^{\Ngdl\times\Ngdl}
+                        &&\text{con}\;(\mathbf A)_{i,j}=a(\varphi_j,\varphi_i),\\
+                        \mathbf f&\in\mathbb R^{\Ngdl}
+                        &&\text{con}\;(\mathbf f)_j=F(\varphi_j),\\
+                        \mathbf g&\in\mathbb R^{\Ngdl}
+                        &&\text{con}\;(\mathbf g)_j=G(\varphi_j),\\
+                        \mathbf A_D\mathbf u_D&\in\mathbb R^{\Ngdl}
+                        &&\text{con}\;(\mathbf A_D\mathbf u_D)_j=a(\mathcal R_{g_D},\varphi_j).
+                    \end{aligned}
+                    \label{eqSistemaAlgebricoDefinizioneMatrici}
+                \end{equation*}
+                %
+                L'implementazione consiste dunque nel costruire la matrice di rigidezza $\mathbf A$ e il termine noto $\mathbf b$, quindi risolvere il sistema lineare e infine ricostruire l'approssimazione della soluzione.
+            \end{frame}
+
+        \section{Problema evolutivo}
+        
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                Il problema evolutivo aggiunge un termine temporale del prim'ordine al \teqref{eqProblemaStazionario}{[PS]} che si trasforma come
+                %
+                \begin{equation*}
+                    \text{[PE]}
+                    \left\{
+                    \begin{aligned}
+                        \derP ut+A(u)
+                                   &=f                &\text{in }&\Omega\times(0,T],\\
+                        u          &=g_D              &\text{su }&\Gamma_D\times(0,T],\\
+                        \nu\derP un&=g_N              &\text{su }&\Gamma_N\times(0,T],\\
+                        u&=u_0              &\text{in }&\Omega,\ t=0,
+                    \end{aligned}
+                    \right.
+                    \label{eqProblemaEllitticoEvolutivo}
+                \end{equation*}
+                %
+                dove ora tutte le funzioni acquistano una dipendenza temporale nell'intervallo di durata $T>0$, oltre che spaziale.
+                
+                Inoltre s'ipotizza che la triangolazione $\mathcal T_h$ non dipenda dal tempo cosicché le funzioni di base $\varphi_j$ sono costanti nel tempo.
+            \end{frame}
+
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                Esprimendo coll'apice $'$ la derivata temporale e ripercorrendo tutti i passaggi già visti nel problema stazionario, si può giungere alla seguente formulazione matriciale                
+                %
+                \begin{equation*}
+                    \begin{aligned}
+                        \mathbf u'(t)&=
+                        \mathbf M^{-1}\big(-\mathbf A\mathbf u(t)+\mathbf f(t)+\mathbf g(t)\\
+                        &\qquad\quad\;\;\ -\mathbf M_D\mathbf u'_D(t)+\mathbf A_D\mathbf u_D(t)\big)\\
+                        &=\mathcal L(\mathbf u(t),t),
+                    \end{aligned}
+                    \label{eqSistemaAlgebricoConDerivataTemporale}
+                \end{equation*}
+                %    
+                nella quale, oltre alle matrici usuali con la loro dipendenza temporale, si aggiungono anche le matrici di massa
+                %
+                \begin{equation*}
+                    \setlength{\thinmuskip}{1mu}
+                    \setlength{\medmuskip}{2mu}
+                    \setlength{\thickmuskip}{3mu}
+                    \begin{aligned}
+                        \mathbf M&\in\mathbb R^{\Ngdl\times\Ngdl}
+                        &&\text{con}\ (\mathbf M)_{i,j}
+                        =\int_\Omega\mathcal\varphi_j\varphi_i\ \de x,\\
+                        \mathbf M_D\mathbf u'_D&\in\mathbb R^{\Ngdl}
+                        &&\text{con}\ (\mathbf M_D\mathbf u'_D)_j
+                        =\int_\Omega\mathcal R'_{g_D}\varphi_j\ \de x.
+                    \end{aligned}
+                    \label{eqSistemaAlgebricoDefinizioneMatriciPE}
+                \end{equation*}
+                %
+            \end{frame}
+
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                Introducendo una semidiscretizzazione temporale omogenea con $N$ passi di lunghezza $\Delta t=T/N$, applicando lo schema di discretizzazione in tempo di Crank–Nicolson
+                %
+                \begin{equation*}
+                    % \setlength{\thinmuskip}{1mu}
+                    % \setlength{\medmuskip}{2mu}
+                    % \setlength{\thickmuskip}{3mu}
+                    \mathbf u^{n+1}=\mathbf u^n+\frac{\Delta t}{2}
+                    \left[\mathcal L(\mathbf u^n,t^n)+\mathcal L(\mathbf u^{n+1},t^{n+1})\right]
+                    \label{eqSchemaCrankNicolson}
+                \end{equation*}
+                %
+                e ponendo $\mathbf u(t^n)=\mathbf u(n\Delta t)\sim\mathbf u^n$, si giunge al seguente sistema lineare dipendente dal tempo:
+                %
+                \begin{equation*}
+                    \mathbf A\mathbf u^{n+1}=\mathbf b^n,
+                    \label{eqSistemaAlgebricoPE}
+                \end{equation*}
+                %
+                in cui $\mathbf A$ e $\mathbf b^n$ \textit{non} hanno le medesime definizioni date nel problema stazionario. Pertanto a ogni iterazione temporale si risolve un problema stazionario nel quale quattro vettori ($\mathbf f$, $\mathbf g$, $\mathbf u_D$ e $\mathbf u'_D$) dipendono dall'istante dell'iterazione considerato.
+            \end{frame}
+
+    
+        \section{Analisi dell'errore}
+        
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                \newcommand{\sepCollaEq}{7.5pt plus 5pt minus 5pt}
+                Dalla teoria si ha la seguente stima dell'errore per un generico EF
+                %
+                \begin{equation*}
+                    \setlength{\abovedisplayskip}{\sepCollaEq}  % Riduce lo spazio sopra l'equazione
+                    \setlength{\belowdisplayskip}{\sepCollaEq}  % Riduce lo spazio sotto l'equazione
+                    \Vert u-u_h\Vert_{\ell,\Omega}
+                    \leq \overline C_{\ell,r,k}h^{r-\ell}\vert u\vert_{r,\Omega}
+                    \quad\quad\forall u\in H^r(\Omega)
+                    \label{eqErroreGlobaleGenerale}
+                \end{equation*}
+                %
+                ove $\ell=0,1$ rispettivamente per la norma in $L^2(\Omega)$ e in $H^1(\Omega)$, mentre gli altri termini hanno i seguenti significati:
+                
+                \begin{enumerate}[label=\arabic*.,  % Cambia l'etichetta degli elementi («item»)
+                                itemsep=2pt,        % Spazio tra gli elementi («item») della lista
+                                leftmargin=1cm,    % Spazio tra la lista e il bordo destro del testo
+                                rightmargin=1.5cm,
+                                topsep=0pt]
+                
+                    \item Il parametro $h$ descrive la finezza della griglia: piú è piccolo piú è fine, viceversa piú è rada
+                    
+                    \item Il parametro $r$ è legato alla regolarità della soluzione, $k$ al grado del massimo spazio di polinomi in $V_E$, mentre $\ell$ alla norma che si valuta; questi sono conessi da:
+                    %
+                    \begin{equation*}
+                        \setlength{\abovedisplayskip}{\sepCollaEq}  % Riduce lo spazio sopra l'equazione
+                        \setlength{\belowdisplayskip}{\sepCollaEq}  % Riduce lo spazio sotto l'equazione
+                        0\le\ell\le r\le k+1.
+                    \end{equation*}
+                    
+                    \item Infine $u_h$ è l'approssimazione della funzione $u$.
+
+                \end{enumerate}
+
+                {\SpaziaturaMate{1}{2}{3}
+                Siccome si considereranno solo funzioni $u\in C^{\infty}(\Omega)$ si ha $r=k+1$, e d'altra parte $k=1,2$ ordinatamente per i $\mathbb P_1$ e i $\mathbb P_2$.}
+            \end{frame}
+
+            \begin{frame}\frametitle{\insertpart{} - \insertsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                Dunque posto $\text{err}_{L^2}=\Vert u-u_h\Vert_{L^2(\Omega)}$ ed $\text{err}_{H^1}=\Vert u-u_h\Vert_{H^1(\Omega)}$ le stime degli errori d'interesse sono le seguenti:
+
+                \begin{description}[itemsep=0pt,       % Spazio tra gli elementi («item») della lista
+                                    leftmargin=0pt,       % Spazio tra la lista e il bordo destro del testo
+                                    labelindent=0.5cm] % Spazio tra il margine sinistro e l'etichetta della lista
+                
+                    \item[Errore dei $\mathbb{P}_1$]%
+                        \begin{align*}
+                            &\text{Lineare}&&\text{Logaritmico}\tag*{}\\
+                            \text{err}_{L^2}&\le Ch^2\vert u\vert_2,&
+                            \log(\text{err}_{L^2})&\le 2\log(h)+\log(C\vert u\vert_2),
+                            % \label{eqStimeErroreP1L2}
+                            \\
+                            \text{err}_{H^1}&\le Ch\vert u\vert_2,&
+                            \log(\text{err}_{H^1})&\le \log(h)+\log(C\vert u\vert_2).
+                            % \label{eqStimeErroreP1H1}
+                        \end{align*}
+                        
+                    \item[Errore dei $\mathbb{P}_2$]%
+                        \begin{align*}
+                            &\text{Lineare}&&\text{Logaritmico}\tag*{}\\
+                            \text{err}_{L^2}&\le Ch^3\vert u\vert_3,&
+                            \log(\text{err}_{L^2})&\le 3\log(h)+\log(C\vert u\vert_3),
+                            % \label{eqStimeErroreP2L2}
+                            \\
+                            \text{err}_{H^1}&\le Ch^2\vert u\vert_3,&
+                            \log(\text{err}_{H^1})&\le 2\log(h)+\log(C\vert u\vert_3).
+                            % \label{eqStimeErroreP2H1}
+                        \end{align*}
+    
+                \end{description}    
+
+                Per concludere, Crank-Nicolson è invece uno schema del second'ordine sia in norma $L^2$ che in norma $H^1$.
+            \end{frame}
+
+
+    \part{Casi di studio}
+    \begin{frame}\partpage\end{frame}
+    
+        \section{Premessa sui parametri di BBTR}
+        
+            \begin{frame}\frametitle{\insertsection{}}
+                In tutti i casi di studio si porranno solo condizioni di Dirichlet, ossia
+                %
+                \begin{equation*}
+                    \setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                    \setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+                    \Gamma_D=\partial\Omega\ \ \text{e}\ \Gamma_N=\emptyset,
+                \end{equation*}
+                %
+                e l'angolo minimo imposto a ogni EF è sempre $20^\circ$.
+                
+                % A voce si dice «l'area massima consentita per ogni EF è il parametro che identifica la sequenza di triangolazioni necessarie alla valutazione dell'errore:»
+                D'altra parte dato un valore di area massima di riferimento iniziale $\overline A$, si genera da essa una sequenza dimezzando a ogni iterazione il valore precedente
+                %
+                \begin{equation*}
+                    \{A_n\}_{n\in\mathbb N}:A_n=\overline A2^{-n},
+                \end{equation*}
+                %
+                i cui primi $N$ elementi descrivono l'area massima \textit{consentita} di altrettante triangolazioni.
+                
+                Una volta generata $\mathcal T_n$ associata ad $A_n$, si ricava il parametro di discretizzazione $h$ mediante la radice dell'area massima \textit{effettiva}
+                %
+                \begin{equation*}
+                    \{h_n\}_{n\in\mathbb N}:h_n=\sqrt{\max_{T\in\mathcal T_n}\left(A_T\right)}.
+                \end{equation*}
+            \end{frame}    
+        
+            \begin{frame}\frametitle{\insertsection{}}
+                Quanto detto rimane valido per la valutazione dell'errore in tempo con Crank-Nicolson, ove $\overline A$ è fisso mentre cambia il passo temporale:
+                %
+                \begin{equation*}
+                    \setlength{\abovedisplayskip}{10pt plus 2pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                    \setlength{\belowdisplayskip}{10pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+                    \{\Delta t_n\}_{n\in\mathbb N}:\Delta t_n=\overline{\Delta t}2^{-n}.
+                \end{equation*}
+                %
+                In tutti i casi di studio, si porrà $\overline A=\overline{\Delta t}=0.01$ ed $N=5$ per la valutazione dell'errore, mentre per le approssimazioni qualitative della soluzione si ha $\overline A=\overline{\Delta t}=0.005$ ed $N=1$.
+        
+                Inoltre vi sono due osservazioni sui grafici degli errori:
+        
+                \begin{enumerate}[label=\arabic*.,    % Cambia l'etichetta degli elementi («item»)
+                                  itemsep=2pt,        % Spazio tra gli elementi («item») della lista
+                                  leftmargin=12.5pt]    % Spazio tra la lista e il bordo destro del testo
+                
+                    \item Poiché l'errore calcolato in $L^2$ è molto inferiore rispetto a quello in $H^1$, in scala lineare sono stati usati due assi delle ordinate.
+                    
+                    \item I coefficienti $\alpha$ e $K$ indicano rispettivamente il termine moltiplicato al monomio di grado massimo e l'intercetta del polinomio fittante.
+        
+                \end{enumerate}                
+             \end{frame}
+
+        \AtBeginSection[]{
+            \begin{frame}
+                \centering\LARGE
+                Caso di studio\\[5pt]
+                {\textcolor{violaSez}{
+                \insertsection}}
+            \end{frame}
+        }
+
+        \section{Dirichlet omogeneo (DO)}
+        \renewcommand{\titoloSez}{DO}
+        
+            \subsection{Impostazione}
+            
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Esso consiste in un problema con condizione al bordo di Dirichlet omogenea ($g_D=0$) e con sola diffusione, ossia con
+                    %
+                    \begin{equation*}
+                        \setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                        \setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+%                        \SpaziaturaMate{2}{2}{3}
+                        \nu=1, \beta=(0,0)^{\top}\text{ e }\sigma=0,
+                    \end{equation*}
+                    %
+                    che equivale a trasformare il \teqref{eqProblemaStazionario}{[PS]} in
+                    %
+                    \begin{equation*}
+                        \left\{
+                        \begin{aligned}
+                            -\Delta u&=f&\text{in }&\Omega, \\
+                                    u&=0&\text{su }&\partial\Omega,
+                        \end{aligned}
+                        \right.
+                        \label{eqDO}
+                    \end{equation*}
+                    %
+                    ove s'impone che la soluzione esatta $u$ sia pari a
+                    %
+                    \begin{equation*}
+                        u=16x(1-x)y(1-y).
+                        \label{eqSoluzioneEsattaDO}
+                    \end{equation*}
+                \end{frame}
+
+            \subsection{Approssimazione qualitativa}
+            
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \newcommand{\sepCol}{\hspace{0pt}}
+                        \newcommand{\sepRig}{\vspace{-1pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\textwidth}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DO_SE_NPunti=100.png}
+                                \caption{Esatta.\sepRig}
+                                \label{figDOTriangolazioniEsatta}
+                            \end{subfigure}
+                        }
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini//DO_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$.}
+                                \label{figDOTriangolazioniApprossimataP1}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini//DO_P2_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_2.$}
+                                \label{figDOTriangolazioniApprossimataP2}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni del DO.}
+                    \end{figure}
+                \end{frame}
+           
+            \subsection{Analisi dell'errore}
+             
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini//DO_P1_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                                \label{figDOErroreP1Lin}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini//DO_P1_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                                \label{figDOErroreP1Log}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nel DO dei $\mathbb{P}_1$.}
+                        \label{figDOErroreP1}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini//DO_P2_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                                \label{figDOErroreP2Lin}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini//DO_P2_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                                \label{figDOErroreP2Log}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nel DO dei $\mathbb{P}_2$.}
+                        \label{figDOErroreP2}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Bordo di Neumann}
+        
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    {\SpaziaturaMate{1}{2}{3}
+                    È notevole osservare che il bordo \textit{non} può essere solo di Neumann ($\Gamma_N=\partial\Omega\ \ \text{e}\ \Gamma_D=\emptyset$) visto che si perde la coercività di $a$;} infatti vale
+                    %
+                    \begin{equation*}
+                        0=-\frac 12\nabla\cdot\boldsymbol\beta+\sigma\ge\sigma_0>0,
+                    \end{equation*}
+                    %
+                    con $\sigma_0$ costante positiva. Ciò non fa esplodere la soluzione che rimane stabile seppure sbagliata.
+
+                    \begin{figure}
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DO_P1_AMax=0.005_Tutto_Neumann.png}
+                                \caption{Coi $\mathbb{P}_1$.}
+                                \label{figDOEsplodenteP1}
+                            \end{subfigure}
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DO_P2_AMax=0.005_Tutto_Neumann.png}
+                                \caption{Coi $\mathbb{P}_2$.}
+                                \label{figDOEsplodenteP2}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzione del DO con $\Gamma_N=\partial\Omega$.}
+                        \label{figDOEsplodente}
+                    \end{figure}
+                \end{frame}
+
+        \section{Dirichlet non omogeneo (DNO)}
+        \renewcommand{\titoloSez}{DNO}
+        
+            \subsection{Impostazione}
+        
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Esso consiste in un problema analogo al DO ma con condizione al bordo di Dirichlet non omogenea
+                    %
+                    \begin{equation*}
+                        g_D=x+y,
+                    \end{equation*}
+                    %
+                    che equivale a trasformare il \teqref{eqProblemaStazionario}{[PS]} in
+                    %
+                    \begin{equation*}
+                        \left\{
+                        \begin{aligned}
+                            -\Delta u&=f&\text{in }&\Omega,\\
+                                    u&=x+y&\text{su }&\partial\Omega,
+                        \end{aligned}
+                        \right.
+                        \label{eqDNO}
+                    \end{equation*}
+                    %
+                    ove s'impone che la soluzione esatta $u$ sia pari a
+                    %
+                    \begin{equation*}
+                        u=16x(1-x)y(1-y)+x+y.
+                        \label{eqSoluzioneEsattaDNO}
+                    \end{equation*}
+                \end{frame}
+
+            \subsection{Approssimazione qualitativa}
+            
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \newcommand{\sepCol}{\hspace{0pt}}
+                        \newcommand{\sepRig}{\vspace{-1pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\textwidth}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DNO_SE_NPunti=100.png}
+                                \caption{Esatta.}
+                                \label{figDNOTriangolazioniEsatta}
+                            \end{subfigure}
+                        }
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DNO_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$.}
+                                \label{figDNOTriangolazioniApprossimataP1}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DNO_P2_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_2.$}
+                                \label{figDNOTriangolazioniApprossimataP2}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni del DNO.}
+                        \label{figDNO}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Bordo di Neumann}
+            
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Valgono due osservazioni:
+                    
+                    \newcommand{\margineS}{1cm}
+                    \newcommand{\margineD}{1cm}
+                    % \newcommand{\margineD}{0cm}
+                    \begin{itemize}[label=$\diamond$,
+                                    % topsep=!, % Spazio superiore tra testo e lista
+                                    itemsep=5pt, % Spazio tra gli elementi («item») della lista
+                                    leftmargin=\margineS,% Spazio tra la lista e il bordo destro del testo
+                                    rightmargin=\margineD] % Spazio tra la lista e il bordo sinistro del testo
+                                    % \leftmargin + \itemindent = \labelindent + \labelwidth + \labelsep
+                                    %itemindent=!,
+                                    % labelindent=!, % Spazio tra il margine sinistro e l'etichetta della lista
+                                    %labelwidth=!,
+                                    %labelsep=!]
+                                    % Per il significato di queste impostazioni si veda p. 3 della documentazione «enumitem» 
+                        \item Gli errori misurati sono gli stessi del DO per cui lo sono anche i relativi grafici.
+                        \item Il bordo \textit{non} può essere solo di Neumann, nel qual caso la soluzione si comporta analogamente al DO.
+                    \end{itemize}
+        
+                     \begin{figure}[h]
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        % \captionsetup[subfigure]{width=4cm}
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DNO_P1_AMax=0.005_Tutto_Neumann.png}
+                                \caption{Coi $\mathbb{P}_1$.}
+                                \label{figDNOEsplodenteP1}
+                            \end{subfigure}
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/DNO_P2_AMax=0.005_Tutto_Neumann.png}
+                                \caption{Coi $\mathbb{P}_2$.}
+                                \label{figDNOEsplodenteP2}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni qualitative del DNO con $\Gamma_N=\partial\Omega$.}
+                    \end{figure}
+                \end{frame}
+
+        \section{Stabilità diffusione-convezione (SDC)}
+        \renewcommand{\titoloSez}{SDC}
+        
+            \subsection{Impostazione e instabilità}
+   
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Esso consiste in un problema di diffusione e convezione con
+                    %
+                    \begin{equation*}
+                        \setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                        \setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+%                        \SpaziaturaMate{1}{2}{3}
+                        \nu=10^{-6}, \beta=(1,0)^{\top}\text{ e }\sigma=0,
+                    \end{equation*}
+                    %
+                    che equivale a trasformare il \teqref{eqProblemaStazionario}{[PS]} in
+                    %
+                    \begin{equation*}
+                        \left\{
+                        \begin{aligned}
+                            -10^{-6}\Delta u+\derP ux&=f&\text{in }&\Omega, \\
+                            u&=u\vert_{\partial\Omega}&\text{su }&\partial\Omega.
+                        \end{aligned}
+                        \right.
+                        \label{eqSDC}
+                    \end{equation*}
+                    %
+                    Il problema è chiaramente a convezione dominante perché vale
+                    %
+                    \begin{equation*}
+                        Pe_T=m_k\frac{\Vert\beta\Vert_Th_T}{2\nu}=m_kh_T5\times10^5\gg1,
+                        \label{eqNumeroPeclet}
+                    \end{equation*}
+                    %
+                    in cui $\Vert\beta\Vert_T\equiv\Vert\beta\Vert_2$, $m_1=1/3$, $m_2=1/24$; ma dato che $m_kh_T$ non può portare $Pe_T$ al di sotto dell'unità il problema risulta instabile.
+%                    \setlength{\thinmuskip}{1mu plus 2mu minus 2mu}
+%                    \setlength{\medmuskip}{2mu plus 1mu minus 1mu}
+%                    \setlength{\thickmuskip}{3mu plus 1mu minus 1mu}
+                \end{frame}
+
+            \subsection{Prima soluzione (SDC1)}
+   
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Come prima soluzione (SDC1) s'impone
+                    %
+                    \begin{equation*}
+                        u=16x(1-x)y(1-y)e^{4x}+x+y.
+                        \label{eqSoluzioneEsattaSDC1}
+                    \end{equation*}
+                    %
+
+                    \begin{figure}[h]
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC1_SS_P1_AMax=0.005.png}
+                                \caption{Coi $\mathbb{P}_1$.}
+                            \end{subfigure}
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC1_SS_P2_AMax=0.005.png}
+                                \caption{Coi $\mathbb{P}_2$.}
+                            \end{subfigure}
+                        }
+                        \caption{SDC1 senza stabilità.}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Seconda soluzione (SDC2)}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Come seconda soluzione (SDC2) s'impone
+                    %
+                    \begin{equation}
+                        u=A\exp\left(-\frac\alpha
+                        {\left(\frac{x(1-x)}{1+\varepsilon}+\varepsilon\right)
+                        \left(\frac{y(1-y)}{1+\varepsilon}+\varepsilon\right)}\right),
+                        \label{eqSoluzioneEsattaSDC2}
+                    \end{equation}
+                    %
+                    in cui $A=\exp(\alpha/(0.5^2/(1+\varepsilon)+\varepsilon)^2)$, $\alpha=0.005$ ed $\varepsilon=0.0005$.
+                    
+                    \begin{figure}[h]
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_SS_P1_AMax=0.005.png}
+                                \caption{Coi $\mathbb{P}_1$.}
+                            \end{subfigure}
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_SS_P2_AMax=0.005.png}
+                                \caption{Coi $\mathbb{P}_2$.}
+                            \end{subfigure}
+                        }
+                        \caption{SDC2 senza stabilità.}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Stabilizzazione \texorpdfstring{\textit{SUPG}}{SUPG}}
+        
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Il metodo scelto per stabilizzare è lo \textit{Streamline Upwind Petrov Galerkin} (\textit{SUPG}). Questo si basa sull'aggiunta lungo $\boldsymbol\beta$ di viscosità artificiale
+                    %
+                    \begin{equation*}
+                        \newcommand{\largTst}{2cm}
+                        \SpaziaturaMate{1}{2}{3}\tau_T=\left\{
+                        \begin{aligned} 
+                            &m_k\frac{h_T^2}{4\nu},
+                            &0\le &Pe_T\le1\quad
+                            \left(\parbox[c]{\largTst}{\centering diffusione\\dominante}\right),\\[2.5pt]
+                            &\frac{h_T}{2\Vert\boldsymbol\beta\Vert_T},
+                            &&Pe_T\ge 1\quad
+                            \left(\parbox[c]{\largTst}{\centering convezione\\dominante}\right),
+                        \end{aligned}
+                        \right.
+                        \label{eqViscositaArtificiale}
+                    \end{equation*}
+                    %  
+                    attraverso la sua moltiplicazione con il residuo debole del [PV]$_\text{h}$ con solo Dirichlet omogeneo e funzione \textit{test} uguale a $\boldsymbol\beta\cdot\nabla v_h$:
+                    %
+                    \begin{equation*}
+                        \SpaziaturaMate{1}{2}{3}
+                        r_s^T(u_h,\boldsymbol\beta\cdot\nabla v_h)\equiv a^T(u_h,\boldsymbol\beta\cdot\nabla v_h)-F^T(\boldsymbol\beta\cdot\nabla v_h),
+                        \label{eqResiduoPEDiscreto}
+                    \end{equation*}
+                \end{frame} 
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Ciò trasforma il {[PV]$_\text{h}$} nel problema
+                    %    
+                    \begin{equation}
+                        \SpaziaturaMate{1}{2}{3}
+                        [\text{PV}]^\text{s}_\text{h}
+                        \left\{
+                        \begin{aligned}
+                            &\text{Trovare }u_h\in V_h\text{ tale che}\\[5pt]
+                            &a^\Omega(u_h,v_h)+\sum_{T\in\mathcal T_h}\tau_Tr^T_s(u_h,\boldsymbol\beta\cdot\nabla v_h)\\
+                            &=F^\Omega(v_h)+G^{\Gamma_N}(v_h)-a^\Omega(Rg_D,v_h),\\[5pt]
+                            &\forall v_h\in V_h,
+                        \end{aligned}
+                        \right.
+                        \label{eqPVDiscretoStabilizzato}
+                    \end{equation}
+                    %
+                    che equivale, al sistema algebrico
+                    %
+                    \begin{equation*}
+                        \mathbf A_\text{s}\mathbf u\equiv
+                        (\mathbf A+\mathbf S)\mathbf u=
+                        \mathbf f+\mathbf f_\text{s}+\mathbf g-\mathbf A_D\mathbf u_D
+                        \equiv\mathbf b_\text{s},
+                        \label{eqSistemaAlgebricoStabilizzato}
+                    \end{equation*}
+                    %
+                    in cui non è possibile dare una forma alla matrice $\mathbf S$ e al vettore $\mathbf f_\text{s}$ rispetto alle funzioni di base \textit{globali} $\varphi_j$ perché la viscosità artificiale è definita \textit{localmente} su ogni EF.
+                \end{frame}
+
+            \subsection{SDC1 stabilizzato}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \newcommand{\sepCol}{\hspace{0pt}}
+                        \newcommand{\sepRig}{\vspace{-1pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\textwidth}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC1_SE_NPunti=100.png}
+                                \caption{Esatta.}
+                                \label{figSDC1TriangolazioniEsatta}
+                            \end{subfigure}
+                        }
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC1_CS_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$.}
+                                \label{figSDC1TriangolazioniApprossimataP1}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC1_CS_P2_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_2.$}
+                                \label{figSDC1TriangolazioniApprossimataP2}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni dell'SDC1.}
+                        \label{figSDC1}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC1_P1_CS_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                                \label{figSDC1ErroreP1Lin}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC1_P1_CS_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                                \label{figSDC1ErroreP1Log}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDC1 coi $\mathbb{P}_1$.}
+                        \label{figSDC1ErroreP1}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC1_P2_CS_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                                \label{figSDC1ErroreP2Lin}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC1_P2_CS_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                                \label{figSDC1ErroreP2Log}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDC1 coi $\mathbb{P}_2$.}
+                        \label{figSDC1ErroreP2}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{SDC2 stabilizzato}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \newcommand{\sepCol}{\hspace{0pt}}
+                        \newcommand{\sepRig}{\vspace{-1pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\textwidth}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_SDR2_SE_NPunti=100.png}
+                                \caption{Esatta.}
+                                \label{figSDC2TriangolazioniEsatta}
+                            \end{subfigure}
+                        }
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_CS_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$.}
+                                \label{figSDC2TriangolazioniApprossimataP1}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_CS_P2_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_2.$}
+                                \label{figSDC2TriangolazioniApprossimataP2}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni dell'SDC2.}
+                        \label{figSDC2}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC2_P1_CS_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                                \label{figSDC2ErroreP1Lin}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC2_P1_CS_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                                \label{figSDC2ErroreP1Log}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDC2 coi $\mathbb{P}_1$.}
+                        \label{figSDC2ErroreP1}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC2_P2_CS_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                                \label{figSDC2ErroreP2Lin}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDC2_P2_CS_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                                \label{figSDC2ErroreP2Log}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDC2 coi $\mathbb{P}_2$.}
+                        \label{figSDC2ErroreP2}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Oscillazioni}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Dato l'elevato errore in norma $H^1$ rispetto al corrispettivo in $L^2$ piú modesto, è chiaro che l'SUPG manifesti oscillazioni com'è ben illustrato nella migliore soluzione dell'SDC2 stabilizzato.
+                     
+                    \begin{figure}[h]
+                        \centering 
+                        \newcommand{\dimIm}{7cm}
+                        \includegraphics[width=\dimIm]{../Immagini/SDC2_CS_P2_Migliore.png}
+                        \caption{Soluzione migliore dell'SDC2 coi $\mathbb P_2$ ed $h_5=0.025$.}
+                        \label{figSDC2SoluzioneMiglioreP2}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Bordo di Neumann}
+        
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Si nota che nel caso in cui $\boldsymbol\beta$ sia entrante in un lato di Neumann, si perde la coercività della forma bilineare, poiché nel lato considerato vale {$\SpaziaturaMate{1}{2}{3}\boldsymbol\beta\cdot\mathbf n<0$}, con $\mathbf n$ versore normale uscente dal dominio $\Omega$.
+
+                    \begin{figure}[h]
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC1_CS_P1_AMax=0.005_Beta_Entrante.png}
+                                \caption{Coi $\mathbb{P}_1$.}
+                            \end{subfigure}
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC1_CS_P2_AMax=0.005_Beta_Entrante.png}
+                                \caption{Coi $\mathbb{P}_2$.}
+                            \end{subfigure}
+                        }
+                        \caption{SDC1 con $\beta$ entrante in $\Gamma_N$.}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+
+                    \begin{figure}[h]
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_CS_P1_AMax=0.005_Beta_Entrante.png}
+                                \caption{Coi $\mathbb{P}_1$.}
+                            \end{subfigure}
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_CS_P2_AMax=0.005_Beta_Entrante.png}
+                                \caption{Coi $\mathbb{P}_2$.}
+                            \end{subfigure}
+                        }
+                        \caption{SDC2 con $\beta$ entrante in $\Gamma_N$.}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Bordo di Neumann SDC2}
+
+
+        \section{Stabilità diffusione-reazione (SDR)}
+        \renewcommand{\titoloSez}{SDR}
+
+            % La struttura è la seguente: impostazione, soluzioni esatte, cenno all'instabilità, possibile "soluzione" con ammassamento, triade SDR1, errori SDR1, triade SDR2, errori SDR2, osservazioni finali colla rottura dei P2
+
+            \subsection{Impostazione e instabilità}
+            
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+
+                    Esso consiste in un problema di diffusione debole e reazione con
+                    %
+                    \begin{equation*}
+                        \setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                        \setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+%                        \SpaziaturaMate{1}{2}{3}
+                        \nu=10^{-6}, \beta=(0,0)^{\top}\text{ e }\sigma=1,
+                    \end{equation*}
+                    %
+                    che equivale a trasformare il \teqref{eqProblemaStazionario}{[PS]} in
+                    %
+                    \begin{equation*}
+                        \left\{
+                        \begin{aligned}
+                            -10^{-6}\Delta u+\sigma u&=f&\text{in }&\Omega, \\
+                            u&=u\vert_{\partial\Omega}&\text{su }&\partial\Omega,
+                        \end{aligned}
+                        \right.
+                        \label{eqSDR}
+                    \end{equation*}
+                    %
+                    Il problema è ovviamente a reazione dominante poiché vale
+                    %
+                    \begin{equation*}
+                        \SpaziaturaMate{1}{2}{3}
+                        Se_E=\frac{\sigma h_E^2}{6\nu}\gg1
+                    \end{equation*}
+                    %
+                    ove $Se_E$ è un numero analogo a quello di Péclet nell'SDC.
+                    
+                    Una tale situazione può generare instabilità che si possono tentare di evitare mediante un metodo di stabilizzazione.
+                \end{frame}
+
+            \subsection{Ammassamento}
+          
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Il metodo scelto è quello d'ammassamento o di \textit{mass lumping} (\textit{MP}). Per illustrarlo si scompone l'operatore $a$ negli operatori
+                    %
+                    \begin{equation*}
+                        \setlength{\thinmuskip}{1mu}
+                        \setlength{\medmuskip}{2mu}
+                        \setlength{\thickmuskip}{3mu}
+                        \begin{aligned}
+                            d:\ &H^1(\Omega)\times H^1(\Omega)\rightarrow\mathbb R\\
+                            &(u,v)\mapsto d(u,v)\equiv
+                            \int_{\Omega}\nu\nabla u\cdot\nabla v\,\de x,\\
+                            c:\ &H^1(\Omega)\times H^1(\Omega)\rightarrow\mathbb R\\
+                            &(u,v)\mapsto c(u,v)\equiv
+                            \int_{\Omega}\boldsymbol\beta\cdot\nabla uv\,\de x,\\
+                            r:\ &H^1(\Omega)\times H^1(\Omega)\rightarrow\mathbb R\\
+                            &(u,v)\mapsto r(u,v)\equiv
+                            \int_{\Omega}\sigma uv \,\de x,
+                        \end{aligned}
+                        \label{eqOperatoriBilineariPVAmmassamento}
+                    \end{equation*}
+                \end{frame}
+    
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Ciò corrisponde alla scomposizione della matrice di rigidezza $\mathbf A$ nelle somma
+                    %
+                    \begin{equation*}
+                        \mathbf A=\mathbf D+\mathbf C+\mathbf R.
+                        \label{eqScomposizioneMatriceRigidezza}
+                    \end{equation*}
+                    %
+                    L'ammassamento consiste nella definizione della matrice diagonale $\mathbf S$ tale che
+                    %
+                    \begin{equation*}
+                        (\mathbf S)_{i,j}=\delta_{ij}\sum_{k=1}^{\Ngdl}(\mathbf R)_{i,k},
+                        \label{eqTrasformazioneMatriceR}
+                    \end{equation*}
+                    %
+                    col $\delta_{ij}$ uguale alla delta di Kronecker, la quale va sostituita alla $\mathbf R$ nella \eqref{eqScomposizioneMatriceRigidezza} cosí da definire una matrice di rigidezza stabilizzata
+                    %
+                    \begin{equation*}
+                        \mathbf A_\text{s}\equiv\mathbf D+\mathbf C+\mathbf S.
+                    \end{equation*}
+                \end{frame}
+
+            \subsection{Soluzioni (SDR1 ed SDR2)}
+          
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Grazie alle funzioni
+                    %
+                    \begin{equation*}
+                        \begin{gathered}
+                            u_1(x,y)=e^{a(x-1)}e^{a(y-0.5)}+e^{a(x-1)}e^{-a(y-0.5)},\\
+                            u_2(x,y)=e^{-ax}e^{-a(y-0.5)}+e^{-ax}e^{a(y-0.5)},\\
+                        \end{gathered}
+                    \end{equation*}
+                    %
+                    con $a=10$, s'impone che la prima soluzione esatta $u$ si pari a
+                    %
+                    \begin{equation}
+                        u(x,y)=-u_1(x,y)u_2(x,y)-u_1(y,x)u_2(y,x)+1,
+                        \label{eqSoluzioneEsattaSDR1}
+                    \end{equation}
+                    %
+                    mentre come seconda soluzione s'impone quella dell'SDC2.
+                \end{frame}
+
+            \subsection{SDR1 senza e con ammassamento}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \newcommand{\sepCol}{\hspace{0pt}}
+                        \newcommand{\sepRig}{\vspace{-1pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\textwidth}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDR1_SE_NPunti=100.png}
+                                \caption{Esatta.}
+                            \end{subfigure}
+                        }
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDR1_SA_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$ senza \textit{ML}.}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDR1_CA_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$ con \textit{ML}.}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni dell'SDR1.}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR1_P1_SA_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR1_P1_SA_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDR1 coi $\mathbb{P}_1$ senza \textit{ML}.}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR1_P1_CA_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR1_P1_CA_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDR1 coi $\mathbb{P}_1$ con \textit{ML}.}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{SDR2 senza e con ammassamento}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.4cm}
+                        \newcommand{\sepCol}{\hspace{0pt}}
+                        \newcommand{\sepRig}{\vspace{-1pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\textwidth}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDC2_SDR2_SE_NPunti=100.png}
+                                \caption{Esatta.}
+                            \end{subfigure}
+                        }
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDR2_SA_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$ senza \textit{ML}.}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[height=\dimIm]{../Immagini/SDR2_CA_P1_AMax=0.005.png}
+                                \caption{Qualitativa coi $\mathbb{P}_1$ con \textit{ML}.}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni dell'SDR2.}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR2_P1_SA_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR2_P1_SA_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDR2 coi $\mathbb{P}_1$ senza \textit{ML}.}
+                    \end{figure}
+                \end{frame}
+
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \begin{figure}[h]
+                        \centering
+                        \newcommand{\lungSF}{.5\linewidth}
+                        \newcommand{\dimIm}{6.2cm}
+                        \newcommand{\sepCol}{\hspace{25pt}}
+                        \newcommand{\rientro}{\hspace{-15pt}}
+                        
+                        \makebox[\linewidth][c]{
+                            \rientro
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR2_P1_CA_ErrLin_AMax=0.01_NSim=5.png}
+                                \caption{In scala lineare.}
+                            \end{subfigure}
+                            \sepCol
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR2_P1_CA_ErrLog_AMax=0.01_NSim=5.png}
+                                \caption{In scala logaritmica.}
+                            \end{subfigure}
+                        }
+                        \caption{Errore nell'SDR2 coi $\mathbb{P}_1$ con \textit{ML}.}
+                    \end{figure}
+                \end{frame}
+
+            \subsection{Analisi e osservazioni}
+            
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    Purtroppo le soluzioni ammassate presentano ordini di convergenza degli errori minori oltre che errori maggiori.
+    
+                    Questo peggioramento potrebbe discendere dalle insufficienti instabilità presenti nell'SDR1 ed SDR2, tali da giustificare una stabilizzazione.
+                    
+                    Si nota infine che l'ammassamento rompe i $\mathbb P_2$ e questa è la ragione per cui sono stati tralasciati in questo caso di studio.
+    
+                    \begin{figure}[H]
+                        \centering 
+                        \newcommand{\lungSF}{0.4\textwidth}
+                        \newcommand{\dimIm}{3.75cm}
+                        \makebox[\linewidth][c]{
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR1_CA_P2_AMax=0.005.png}
+                                \caption{SDR1.}
+                            \end{subfigure}
+                            \begin{subfigure}[t]{\lungSF}
+                                \centering
+                                \includegraphics[width=\dimIm]{../Immagini/SDR2_CA_P2_AMax=0.005.png}
+                                \caption{SDR2.}
+                            \end{subfigure}
+                        }
+                        \caption{Soluzioni qualitativi dell'SDR coi $\mathbb P_2$ ed \textit{ML}.}
+                        \label{figSDRP2CA}
+                    \end{figure}
+                \end{frame}
+
+
+    \section{Problemi Evolutivi (E)}
+    \renewcommand{\titoloSez}{E}
+    
+        \subsection{Impostazione}
+        
+             \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                In tutti i casi di studio evolutivi si pone
+                %
+                \begin{equation*}
+                    \setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sopra l'equazione
+                    \setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}  % Riduce lo spazio sotto l'equazione
+%                    \SpaziaturaMate{1}{2}{3}
+                    \nu=1,\beta=(1,1)^{\top},\sigma=1\text{ e }T=1,
+                \end{equation*}
+                %
+                che equivale a trasformare il {[PE]} in
+                %
+                \begin{equation}
+                    % \SpaziaturaMate{1}{2}{3}
+                    \left\{
+                    \begin{aligned}
+                        \derP ut-\Delta u+\derP ux+\derP uy+u&=f&\text{in }&\Omega\times(0,1], \\
+                                u&=u\vert_{\partial\Omega}&\text{su }&\partial\Omega\times(0,1],\\
+                        u&=u\vert_{t=0} &\text{in }&\Omega,\;t=0.
+                    \end{aligned}
+                    \right.
+                    \label{eqPETS12}
+                \end{equation}
+                %
+                Tuttavia in questo contesto evolutivo la scelta delle soluzioni esatte dev'essere ben oculata per poter analizzare adeguatamente gli errori.
+            \end{frame}
+            
+        \subsection{Indipendenza degli errori}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                Infatti data una funzione $\SpaziaturaMate{1}{2}{3}f:\Omega\times[0,T]\to\mathbb R$, essa può indurre un errore sia in spazio che in tempo rendendo cosí difficile apprezzare i singoli ordini di convergenza sia di Crank–Nicolson (CN) che dei $\mathbb P_1$ e $\mathbb P_2$.
+                
+                Per ovviare al problema si possono rendere indipendenti gli errori scomponendo la $f$ come somma delle funzioni $\SpaziaturaMate{1}{2}{3}g:\Omega\to\mathbb R$ e $\SpaziaturaMate{1}{2}{3}h:[0,T]\to\mathbb R$:
+                %
+                \begin{equation*}
+                    f(x,y,t)\equiv g(x,y)+h(t).
+                \end{equation*}
+                %
+                Dopodiché è necessario, a seconda dei casi di studio, approssimare con esattezza una funzione e commettere un errore coll'altra; ad esempio per studiare CN coi $\mathbb P_2$ si può porre
+                %
+                \begin{equation*}
+                    g\in\mathbb P_2\quad
+                    \text{e}\quad
+                    h\notin V(\text{CN}).
+                \end{equation*}
+            \end{frame}
+
+        \subsection{Soluzioni (ET1, ET2, ES1 ed ES2)}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                Ragionando in tal modo le soluzioni scelte sono tre:
+
+                \newcommand{\margineS}{1cm}
+                \newcommand{\margineD}{1.75cm}
+                % \newcommand{\margineD}{0cm}
+                \begin{itemize}[label=$\diamond$,
+                                topsep=0pt, % Spazio superiore tra testo e lista
+                                itemsep=5pt, % Spazio tra gli elementi («item») della lista
+                                leftmargin=\margineS,% Spazio tra la lista e il bordo destro del testo
+                                rightmargin=\margineD] % Spazio tra la lista e il bordo sinistro del testo
+                                % \leftmargin + \itemindent = \labelindent + \labelwidth + \labelsep
+                                %itemindent=!,
+                                % labelindent=!, % Spazio tra il margine sinistro e l'etichetta della lista
+                                %labelwidth=!,
+                                %labelsep=!]
+                                % Per il significato di queste impostazioni si veda p. 3 della documentazione «enumitem» 
+                    \item Nell'ET1 si studia CN coi $\mathbb P_1$, quindi s'impone
+                        \begin{equation*}
+                            \SpaziaturaMate{1}{2}{3}
+                            u=g+h=x+y+\sin(5t).
+                        \end{equation*}
+                    \item Nell'ET2 si verifica CN coi $\mathbb P_2$, per cui si pone
+                        \begin{equation*}
+                            \SpaziaturaMate{1}{2}{3}
+                            u=g+h=x^2+y^2+\sin(5t).
+                        \end{equation*}
+                    \item Nell'ES1 ed ES2 si analizzano i $\mathbb P_1$ e $\mathbb P_2$ con CN, pertanto s'impone
+                        \begin{equation*}
+                            \SpaziaturaMate{1}{2}{3}
+                            u=g+h=\sin(x)+y^3+t^2.
+                        \end{equation*}
+                \end{itemize}
+            \end{frame}
+
+        \subsection{In tempo \texorpdfstring{$\mathbb P_1$}{P1} (ET1)}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET1_SE_NPunti=100_t=0.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET1_P1_AMax=dt=0.005_t=0.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ET1 al tempo $t=0$.}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET1_SE_NPunti=100_t=0.5.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET1_P1_AMax=dt=0.005_t=0.5.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ET1 al tempo $t=0.5$.}
+                \end{figure}
+            \end{frame}
+            
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET1_SE_NPunti=100_t=1.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET1_P1_AMax=dt=0.005_t=1.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ET1 al tempo $t=1$.}
+                \end{figure}            
+             \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \begin{figure}[h]
+                    \centering
+                    \newcommand{\lungSF}{.5\linewidth}
+                    \newcommand{\dimIm}{6.2cm}
+                    \newcommand{\sepCol}{\hspace{25pt}}
+                    \newcommand{\rientro}{\hspace{-15pt}}
+                    
+                    \makebox[\linewidth][c]{
+                        \rientro
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ET1_P1_ErrLin_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala lineare.}
+                            \label{figET1ErroreP1Lin}
+                        \end{subfigure}
+                        \sepCol
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ET1_P1_ErrLog_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala logaritmica.}
+                            \label{figET1ErroreP1Log}
+                        \end{subfigure}
+                    }
+                    \caption{Errore nell'ET1 di CN coi $\mathbb{P}_1$.}
+                    \label{figET1ErroreP1}
+                \end{figure}
+            \end{frame}
+
+        \subsection{In tempo \texorpdfstring{$\mathbb P_2$}{P2} (ET2)}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET2_SE_NPunti=100_t=0.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET2_P2_AMax=dt=0.005_t=0.png}
+                            \caption{Qualitativa coi $\mathbb{P}_2$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ET2 al tempo $t=0$.}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET2_SE_NPunti=100_t=0.5.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET2_P2_AMax=dt=0.005_t=0.5.png}
+                            \caption{Qualitativa coi $\mathbb{P}_2$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ET2 al tempo $t=0.5$.}
+                \end{figure}
+            \end{frame}
+            
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET2_SE_NPunti=100_t=1.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ET2_P2_AMax=dt=0.005_t=1.png}
+                            \caption{Qualitativa coi $\mathbb{P}_2$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ET2 al tempo $t=1$.}
+                \end{figure}
+             \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \begin{figure}[h]
+                    \newcommand{\lungSF}{.5\linewidth}
+                    \newcommand{\dimIm}{6.2cm}
+                    \newcommand{\sepCol}{\hspace{25pt}}
+                    \newcommand{\rientro}{\hspace{-15pt}}
+                    
+                    \makebox[\linewidth][c]{
+                        \rientro
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ET2_P2_ErrLin_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala lineare.}
+                            \label{figET2ErroreP2Lin}
+                        \end{subfigure}
+                        \sepCol
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ET2_P2_ErrLog_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala logaritmica.}
+                            \label{figET2ErroreP2Log}
+                        \end{subfigure}
+                    }
+                    \caption{Errore nell'ET2 di CN coi $\mathbb{P}_2$.}
+                    \label{figET2ErroreP2}
+                \end{figure}
+            \end{frame}
+
+        \subsection{In tempo \texorpdfstring{$\mathbb P_1$}{P1} (ES1)}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES12_SE_NPunti=100_t=0.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES1_P1_AMax=dt=0.005_t=0.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ES1 al tempo $t=0$.}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES12_SE_NPunti=100_t=0.5.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES1_P1_AMax=dt=0.005_t=0.5.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ES1 al tempo $t=0.5$.}
+                \end{figure}
+            \end{frame}
+            
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES12_SE_NPunti=100_t=1.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES1_P1_AMax=dt=0.005_t=1.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ES1 al tempo $t=1$.}
+                \end{figure}
+             \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \begin{figure}[h]
+                    \newcommand{\lungSF}{.5\linewidth}
+                    \newcommand{\dimIm}{6.2cm}
+                    \newcommand{\sepCol}{\hspace{25pt}}
+                    \newcommand{\rientro}{\hspace{-15pt}}
+                    
+                    \makebox[\linewidth][c]{
+                        \rientro
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ES1_P1_ErrLin_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala lineare.}
+                            \label{figES1ErroreP1Lin}
+                        \end{subfigure}
+                        \sepCol
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ES1_P1_ErrLog_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala logaritmica.}
+                            \label{figES1ErroreP1Log}
+                        \end{subfigure}
+                    }
+                    \caption{Errore nell'ES1 di CN coi $\mathbb{P}_1$.}
+                    \label{figES1ErroreP1}
+                \end{figure}
+            \end{frame}
+
+        \subsection{In tempo \texorpdfstring{$\mathbb P_2$}{P2} (ES2)}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES12_SE_NPunti=100_t=0.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES2_P2_AMax=dt=0.005_t=0.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ES2 al tempo $t=0$.}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES12_SE_NPunti=100_t=0.5.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES2_P2_AMax=dt=0.005_t=0.5.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ES2 al tempo $t=0.5$.}
+                \end{figure}
+            \end{frame}
+            
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{2}{3}
+                \begin{figure}
+                    \newcommand{\lungSF}{0.525\textwidth}
+                    \newcommand{\dimIm}{4.5cm}
+                    \makebox[\linewidth][c]{
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES12_SE_NPunti=100_t=1.png}
+                            \caption{Esatta.}
+                        \end{subfigure}
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[height=\dimIm]{../Immagini/ES2_P2_AMax=dt=0.005_t=1.png}
+                            \caption{Qualitativa coi $\mathbb{P}_1$.}
+                        \end{subfigure}
+                    }
+                    \caption{Soluzione del'ES2 al tempo $t=1$.}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \begin{figure}[h]
+                    \newcommand{\lungSF}{.5\linewidth}
+                    \newcommand{\dimIm}{6.2cm}
+                    \newcommand{\sepCol}{\hspace{25pt}}
+                    \newcommand{\rientro}{\hspace{-15pt}}
+                    
+                    \makebox[\linewidth][c]{
+                        \rientro
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ES2_P2_ErrLin_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala lineare.}
+                            \label{figES2ErroreP2Lin}
+                        \end{subfigure}
+                        \sepCol
+                        \begin{subfigure}[t]{\lungSF}
+                            \centering
+                            \includegraphics[width=\dimIm]{../Immagini/ES2_P2_ErrLog_AMax=dt=0.01_NSim=5.png}
+                            \caption{In scala logaritmica.}
+                            \label{figES2ErroreP2Log}
+                        \end{subfigure}
+                    }
+                    \caption{Errore nell'ES2 di CN coi $\mathbb{P}_2$.}
+                    \label{figES2ErroreP2}
+                \end{figure}
+            \end{frame}
+
+        \subsection{Gaussiana movente (EGM)}
+        
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                L'ultimo caso di studio consiste nell'imporre come soluzione esatta la
+                %
+                \begin{equation*}
+                    u=N\exp\left(-\frac{(x-t)^2+(y-t)^2}{2\sigma^2}\right),
+                    \label{eqSoluzioneEsattaEGM}
+                \end{equation*}
+                %
+                ove $\SpaziaturaMate{1}{2}{3}N=0.25$, $\SpaziaturaMate{1}{2}{3}\sigma^2=1/40$ e $\SpaziaturaMate{1}{2}{3}\mu=t$. In essenza è una distribuzione normale con ampiezza $N$, varianza $\sigma^2$ e media coincide col tempo $t$.
+                
+                L'EGM è però solo studiato superficialmente poiché induce un errore sia in spazio che in tempo: ci si limita a mostrarne la soluzione qualitativa coi $\mathbb P_2$ in nove istanti evolutivi.
+                
+                Tuttavia il suo aspetto notevole è la possibilità di modellare, sotto altre ipotesi e con piú EDP accoppiate, la chemotassi di cellule.
+            \end{frame}
+
+            \newcommand{\dimIm}{6cm}
+            \newcommand{\testoDidascalia}[1]{
+                Soluzione dell'EGM coi $\mathbb P_2$ al tempo $t=#1$.
+            }
+                % Diapo [per l']EGM
+            \newcommand{\diapoEGM}[1]{
+                \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                    \SpaziaturaMate{1}{1}{1}
+                    \begin{figure}[h]
+                        \centering
+                        \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=#1.png}
+                        \caption{\testoDidascalia{#1}}
+                        % \label{figEGMTriangolazioniT1}
+                    \end{figure}
+                \end{frame}
+            }
+                
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.png}
+                    \caption{\testoDidascalia{0}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.125.png}
+                    \caption{\testoDidascalia{0.125}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.25.png}
+                    \caption{\testoDidascalia{0.25}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.375.png}
+                    \caption{\testoDidascalia{0.375}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.5.png}
+                    \caption{\testoDidascalia{0.5}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.625.png}
+                    \caption{\testoDidascalia{0.625}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.75.png}
+                    \caption{\testoDidascalia{0.75}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=0.875.png}
+                    \caption{\testoDidascalia{0.875}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+            \begin{frame}\frametitle{\titoloSez{} - \insertsubsection{}}
+                \SpaziaturaMate{1}{1}{1}
+                \begin{figure}[h]
+                    \centering
+                    \includegraphics[height=\dimIm]{../Immagini/EGM_P2_AMax=dt=0.005_t=1.png}
+                    \caption{\testoDidascalia{1}}
+                    % \label{figEGMTriangolazioniT1}
+                \end{figure}
+            \end{frame}
+
+                % Ciclo for che stampa le nove immagini precedenti
+            % \foreach \i in {0,1,...,8} {%
+            %         % Valuta che il numero non sia un'estremo
+            %     \pgfmathsetmacro{\ver}{\i!=0 && \i!=8}
+
+            %         % Moltiplica per 0.125 ed eventualmente arrotonda
+            %     \ifnum \ver=1
+            %         \pgfmathsetmacro{\i}{\i*0.125}
+            %     \else
+            %         \pgfmathtruncatemacro{\i}{floor(\i*0.125)}
+            %     \fi
+
+            %         % Comando per debbaggare: stampa nei «log»
+            %     % \typeout{\i}
+
+            %         % Crea la diapositiva
+            %     \diapoEGM{\i}
+            % } 
+
+    \part{Conclusioni}
+    \begin{frame}\partpage\end{frame}
+
+        \begin{frame}\frametitle{\insertpart{}}
+            Tutt'i risultati ricavati corrispondono alla teoria studiata, salvo l'SDR la cui differenza reputiamo discenda dalla difficoltà a manifestare le instabilità necessarie per giustificare l'ammassamento.
+            
+            Si avvisa inoltre che è stato anche misurato il numero di condizionamento della matrice di rigidezza $\mathbf A$ e l'errore \textit{a posteriori}.
+            
+            \begin{figure}
+                \newcommand{\lungSF}{0.5\textwidth}
+                \renewcommand{\dimIm}{5.25cm}
+                \makebox[\linewidth][c]{
+                    \begin{subfigure}[t]{\lungSF}
+                        \centering
+                        \includegraphics[width=\dimIm]{../Immagini/DO_P1_NCA_Log.png}
+                        \caption{$\text{cond}(\mathbf A)$ nel DO coi $\mathbb P_1$.}
+                    \end{subfigure}
+                    \begin{subfigure}[t]{\lungSF}
+                        \centering
+                        \includegraphics[width=\dimIm]{../Immagini/DNO_P2_Stime_Log.png}
+                        \caption{Estimatori nel DNO coi $\mathbb P_2$.}
+                    \end{subfigure}
+                }
+                \caption{Implementazioni omesse.}
+            \end{figure}            
+        \end{frame}
+
+    \part{Riferimenti}
+
+        \begin{frame}[allowframebreaks,t]\frametitle{\insertpart{}}
+            \setbeamertemplate{bibliography item}{\insertbiblabel}
+            \bibliographystyle{ieeetr}
+            \bibliography{Bibliografia.bib}  
+            \nocite{*} % Scrive tutte le fonti nella bibliografia contenute nella filza «Bibliografia.bib»
+        \end{frame}
+
+\end{document}
